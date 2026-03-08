@@ -51,19 +51,15 @@ app.get('/', (req, res) => res.render('index'));
 app.get('/privacy-policy', (req, res) => {
   res.send(`
     <html>
-      <head><head>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Page Title</title>
-  <style>...</style>
-</head><title>Privacy Policy - SubShopper</title></head>
-      <body style="font-family: Arial; margin: 40px; line-height: 1.6;">
-        <h1>Privacy Policy</h1>
-        <p><strong>Last Updated:</strong> ${new Date().toLocaleDateString()}</p>
-        <h2>Mobile Information (SMS)</h2>
-        <p><strong>Mobile Information:</strong> We do not share mobile information with third parties or affiliates for marketing or promotional purposes. All information collected via SMS is used solely for lead recovery and customer service. Text messaging originator opt-in data and consent are not shared with any third parties.</p>
-        <h2>Opt-Out Instructions</h2>
-        <p>You may opt out of receiving text messages at any time by replying <strong>STOP</strong> to any message. For help, reply <strong>HELP</strong>. Message and data rates may apply.</p>
-        <p><a href="/">← Back to Home</a></p>
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Privacy Policy - Revenue Recovery System</title>
+        <style>...</style>
+      </head>
+      <body>
+        ${require('fs').readFileSync('./views/partials/header.ejs', 'utf8')} <!-- crude, but better to use EJS -->
+        <div class="container">... your content ...</div>
+        ${require('fs').readFileSync('./views/partials/footer.ejs', 'utf8')}
       </body>
     </html>
   `);
