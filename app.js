@@ -51,7 +51,11 @@ app.get('/', (req, res) => res.render('index'));
 app.get('/privacy-policy', (req, res) => {
   res.send(`
     <html>
-      <head><title>Privacy Policy - SubShopper</title></head>
+      <head><head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Page Title</title>
+  <style>...</style>
+</head><title>Privacy Policy - SubShopper</title></head>
       <body style="font-family: Arial; margin: 40px; line-height: 1.6;">
         <h1>Privacy Policy</h1>
         <p><strong>Last Updated:</strong> ${new Date().toLocaleDateString()}</p>
@@ -69,7 +73,11 @@ app.get('/privacy-policy', (req, res) => {
 app.get('/terms-and-conditions', (req, res) => {
   res.send(`
     <html>
-      <head><title>Terms and Conditions - SubShopper</title></head>
+      <head><head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Page Title</title>
+  <style>...</style>
+</head><title>Terms and Conditions - SubShopper</title></head>
       <body style="font-family: Arial; margin: 40px; line-height: 1.6;">
         <h1>Terms and Conditions</h1>
         <p><strong>Last Updated:</strong> ${new Date().toLocaleDateString()}</p>
