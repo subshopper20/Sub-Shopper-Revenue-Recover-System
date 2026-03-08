@@ -3,6 +3,11 @@ const express = require('express');
 const { transcribeAudio, extractLeadInfo } = require('./ai');
 const supabase = require('./supabase');
 
+const express = require('express');
+const { transcribeAudio, extractLeadInfo } = require('./ai');
+const supabase = require('./supabase');
+const path = require('path');
+// etc.
 const app = express();
 const port = 3000;
 
