@@ -1,0 +1,37 @@
+require('dotenv').config();
+const express = require('express');
+const { transcribeAudio, extractLeadInfo } = require('./ai');
+const supabase = require('./supabase');
+const path = require('path');
+
+const app = express();
+const port = process.env.PORT || 3000;
+
+// View engine setup
+app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'views'));
+
+// Middleware
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Home page
+app.get('/', (req, res) => {
+    res.render('index');
+});
+
+// Privacy Policy page – fix this with proper HTML string
+app.get('/privacy-policy', (req, res) => {
+    res.send(`
+        <html>
+            <head><title>Privacy Policy</title></head>
+            <body>
+                <h1>Privacy Policy</h1>
+                <p>Your privacy policy content here...</p>
+            </body>
+        </html>
+    `);
+});
+
+// … the rest of your routes (pricing, signup, login, etc.) …
+// Make sure you have only ONE copy of each route
