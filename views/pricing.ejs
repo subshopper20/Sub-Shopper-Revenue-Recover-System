@@ -7,72 +7,171 @@
   <style>
     body { font-family: Arial, sans-serif; background: #f5f5f5; margin: 0; padding: 0; }
     .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
-    h1 { text-align: center; margin-bottom: 40px; }
+    h1 { text-align: center; margin-bottom: 10px; }
+    .subhead { text-align: center; color: #555; margin-bottom: 40px; }
     .plans { display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; }
     .plan-card { background: white; padding: 30px; border-radius: 8px; width: 280px; text-align: center; box-shadow: 0 2px 15px rgba(0,0,0,0.1); }
+    .plan-card h2 { color: #1e293b; margin-top: 0; }
     .price { font-size: 32px; color: #4361ee; margin: 20px 0; }
-    .feature-list { text-align: left; margin: 20px 0; padding-left: 20px; }
-    .feature-list li { margin: 10px 0; list-style: none; }
-    .feature-list li:before { content: "✓ "; color: #4361ee; font-weight: bold; }
-    button { background: #4361ee; color: white; padding: 14px; width: 100%; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; }
+    .price small { font-size: 16px; color: #666; }
+    .feature-list { text-align: left; margin: 20px 0; padding-left: 0; }
+    .feature-list li { margin: 12px 0; list-style: none; display: flex; align-items: center; gap: 8px; }
+    .feature-list li:before { content: "✓"; color: #4361ee; font-weight: bold; margin-right: 8px; }
+    button { background: #4361ee; color: white; padding: 14px; width: 100%; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; transition: background 0.2s; }
     button:hover { background: #3046c0; }
-    .toggle-container { display: flex; justify-content: center; margin: 30px 0; }
-    .toggle-option { margin: 0 20px; }
-    .save-badge { background: #10b981; color: white; padding: 4px 12px; border-radius: 20px; font-size: 14px; margin-left: 10px; }
+    .toggle-container { display: flex; justify-content: center; margin: 30px 0; background: white; padding: 10px; border-radius: 40px; width: fit-content; margin-left: auto; margin-right: auto; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    .toggle-option { margin: 0 5px; }
+    .toggle-option input { display: none; }
+    .toggle-option label { display: inline-block; padding: 10px 30px; border-radius: 40px; cursor: pointer; font-weight: 600; color: #555; }
+    .toggle-option input:checked + label { background: #4361ee; color: white; }
+    .save-badge { background: #10b981; color: white; padding: 2px 8px; border-radius: 20px; font-size: 12px; margin-left: 10px; }
+    .tagline { font-size: 14px; color: #666; margin-bottom: 20px; font-style: italic; }
+    .popular { background: #ffe; border: 2px solid #4361ee; }
   </style>
 </head>
 <body>
   <%- include('partials/header') %>
   <div class="container">
     <h1>Choose the Right Plan for Your Business</h1>
+    <div class="subhead">Simple, transparent pricing. Start recovering missed revenue today.</div>
+
+    <!-- Monthly/Annual Toggle -->
     <div class="toggle-container">
-      <label class="toggle-option"><input type="radio" name="interval" value="month" checked> Monthly</label>
-      <label class="toggle-option"><input type="radio" name="interval" value="year"> Annual <span class="save-badge">Save up to 10%</span></label>
+      <div class="toggle-option">
+        <input type="radio" name="interval" id="monthly" value="month" checked>
+        <label for="monthly">Monthly</label>
+      </div>
+      <div class="toggle-option">
+        <input type="radio" name="interval" id="annual" value="year">
+        <label for="annual">Annual <span class="save-badge">Save up to 10%</span></label>
+      </div>
     </div>
+
+    <!-- Plans Container -->
     <div class="plans" id="plansContainer">Loading plans...</div>
   </div>
+
   <script>
     let allPlans = [];
+
     async function loadPlans() {
       const res = await fetch('/api/plans');
       allPlans = await res.json();
       displayPlans('month');
     }
+
     function displayPlans(interval) {
       const container = document.getElementById('plansContainer');
       container.innerHTML = '';
-      const filtered = allPlans.filter(plan => plan.name.includes(interval === 'month' ? 'Monthly' : 'Annual'));
+
+      // Filter plans by interval (name contains 'Monthly' or 'Annual')
+      const filtered = allPlans.filter(plan => 
+        plan.name.toLowerCase().includes(interval === 'month' ? 'monthly' : 'annual')
+      );
+
+      // Sort plans by price (assuming Starter < Growth < Professional)
+      filtered.sort((a, b) => a.monthly_price - b.monthly_price);
+
       filtered.forEach(plan => {
-        const priceDisplay = interval === 'month' ? `$${plan.monthly_price/100}<small>/mo</small>` : `$${plan.monthly_price/100}<small>/year</small>`;
+        // Determine the base plan name (without interval)
+        let baseName = plan.name.replace(/ (Monthly|Annual)/i, '');
+        
+        // Set the tagline based on baseName
+        let tagline = '';
+        let featureLines = [];
+        if (baseName === 'Starter') {
+          tagline = 'For businesses that don’t know how many leads they’re losing.';
+          featureLines = [
+            'Call capture system',
+            'Missed call automation',
+            'Basic lead dashboard',
+            '30‑minute training session',
+            'Email & chat support'
+          ];
+        } else if (baseName === 'Growth') {
+          tagline = 'For businesses asking “Why am I losing money and how much?”';
+          featureLines = [
+            'AI transcription engine',
+            'Lead categorization',
+            'Revenue loss estimation',
+            'Missed call automation',
+            'One optimization call per month'
+          ];
+        } else if (baseName === 'Professional') {
+          tagline = 'For businesses ready to optimize and scale.';
+          featureLines = [
+            'Website integration',
+            'CRM auto‑fill sync',
+            'Custom reporting dashboard',
+            'Two strategy calls per month',
+            'Priority support'
+          ];
+        }
+
+        // Build the feature list HTML
+        let featuresHtml = '';
+        featureLines.forEach(line => {
+          featuresHtml += `<li>${line}</li>`;
+        });
+
+        // Also add the usage limits as extra lines (if desired)
+        featuresHtml += `<li><strong>${plan.call_limit}</strong> calls/month</li>`;
+        featuresHtml += `<li><strong>${plan.ai_minutes_limit}</strong> AI minutes/month</li>`;
+
+        const priceDisplay = interval === 'month' 
+          ? `$${plan.monthly_price/100}<small>/mo</small>` 
+          : `$${plan.monthly_price/100}<small>/year</small>`;
+
         const card = document.createElement('div');
         card.className = 'plan-card';
+        if (baseName === 'Growth') card.classList.add('popular'); // highlight Growth
+
         card.innerHTML = `
-          <h2>${plan.name.replace(' Monthly','').replace(' Annual','')}</h2>
+          <h2>${baseName}</h2>
+          <div class="tagline">${tagline}</div>
           <div class="price">${priceDisplay}</div>
-          <div class="feature-list">
-            <li>${plan.call_limit} calls/month</li>
-            <li>${plan.ai_minutes_limit} AI minutes</li>
-            ${plan.features?.sms_auto_reply ? '<li>SMS auto-reply</li>' : ''}
-            ${plan.features?.advanced_analytics ? '<li>Advanced analytics</li>' : ''}
-          </div>
+          <ul class="feature-list">
+            ${featuresHtml}
+          </ul>
           <button onclick="checkout('${plan.stripe_price_id}')">Choose Plan</button>
         `;
         container.appendChild(card);
       });
     }
+
     async function checkout(priceId) {
       const token = localStorage.getItem('token');
-      if (!token) return window.location.href = '/signup';
+      if (!token) {
+        window.location.href = '/signup';
+        return;
+      }
       const res = await fetch('/api/create-checkout-session', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ priceId, successUrl: window.location.origin + '/dashboard', cancelUrl: window.location.origin + '/pricing' })
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          priceId,
+          successUrl: window.location.origin + '/dashboard',
+          cancelUrl: window.location.origin + '/pricing'
+        })
       });
       const data = await res.json();
-      if (data.url) window.location.href = data.url;
-      else alert('Error creating checkout session');
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        alert('Error creating checkout session: ' + (data.error || 'Unknown error'));
+      }
     }
-    document.querySelectorAll('input[name="interval"]').forEach(r => r.addEventListener('change', e => displayPlans(e.target.value)));
+
+    // Event listeners for toggle
+    document.querySelectorAll('input[name="interval"]').forEach(radio => {
+      radio.addEventListener('change', (e) => {
+        displayPlans(e.target.value);
+      });
+    });
+
     loadPlans();
   </script>
   <%- include('partials/footer') %>
