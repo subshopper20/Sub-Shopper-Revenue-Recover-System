@@ -1,4 +1,4 @@
-<header style="background: #4361ee; padding: 15px 30px; color: white; display: flex; justify-content: space-between; align-items: center;">
+<header class="header" style="background: #4361ee; padding: 15px 30px; color: white; display: flex; justify-content: space-between; align-items: center;">
   <div style="font-size: 24px; font-weight: bold;">Revenue Recovery System</div>
   <nav>
     <a href="/" style="color: white; margin: 0 15px; text-decoration: none;">Home</a>
@@ -7,3 +7,42 @@
     <a href="/login" style="color: white; margin: 0 15px; text-decoration: none;">Log In</a>
   </nav>
 </header>
+
+<style>
+  /* Global responsive adjustments */
+  @media (max-width: 768px) {
+    body {
+      padding: 20px !important;
+    }
+    .container {
+      width: 100% !important;
+      padding: 20px !important;
+      margin: 20px auto !important;
+    }
+    h1 { font-size: 24px; }
+    .plan-card {
+      width: 100% !important;
+      margin: 10px 0 !important;
+    }
+    .stats { flex-direction: column; }
+    .stat-card { width: 100%; margin: 5px 0; }
+    table { font-size: 12px; }
+    td, th { padding: 8px; }
+    header nav a {
+      display: inline-block;
+      margin: 5px !important;
+      font-size: 14px;
+    }
+  }
+  /* Adjust header for small screens */
+  @media (max-width: 480px) {
+    header {
+      flex-direction: column;
+      text-align: center;
+      padding: 10px !important;
+    }
+    header nav {
+      margin-top: 10px;
+    }
+  }
+</style>
