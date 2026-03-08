@@ -257,10 +257,8 @@ app.get('/dashboard', authMiddleware, async (req, res) => {
     .select('*')
     .eq('id', req.businessId)
     .single();
-  // You can render a proper dashboard view here, but for now JSON is fine
-  res.json({ message: 'Welcome to your dashboard', business });
+  res.render('dashboard', { business });
 });
-
 // ---------- Test call endpoint (simulate) ----------
 app.post('/test-call', express.json(), async (req, res) => {
   try {

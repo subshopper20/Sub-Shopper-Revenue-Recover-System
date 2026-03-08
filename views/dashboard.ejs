@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Dashboard - SubShopper</title>
+  <style>
+    body { font-family: Arial; margin: 40px; background: #f5f5f5; }
+    .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; }
+    h1 { color: #333; }
+    .info { margin: 20px 0; }
+    .label { font-weight: bold; }
+  </style>
+</head>
+<body>
+  <%- include('partials/header') %>
+  <div class="container">
+    <h1>Dashboard</h1>
+    <p>Welcome, <%= business.name %>!</p>
+    <div class="info">
+      <p><span class="label">Business ID:</span> <%= business.id %></p>
+      <p><span class="label">Plan ID:</span> <%= business.plan_id || 'None' %></p>
+      <p><span class="label">Stripe Customer ID:</span> <%= business.stripe_customer_id || 'Not set' %></p>
+    </div>
+    <p><a href="/pricing">View Plans</a> | <a href="/logout">Logout</a></p>
+  </div>
+</body>
+</html>
