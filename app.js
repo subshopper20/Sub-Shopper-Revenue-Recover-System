@@ -46,13 +46,63 @@ async function authMiddleware(req, res, next) {
 
 // ---------- Public Routes ----------
 app.get('/', (req, res) => res.render('index'));
-app.get('/privacy-policy', (req, res) => { /* your HTML */ });
-app.get('/terms-and-conditions', (req, res) => { /* your HTML */ });
+
+// Privacy Policy (full Twilio‑compliant content)
+app.get('/privacy-policy', (req, res) => {
+  res.send(`
+    <html>
+      <head><title>Privacy Policy - SubShopper</title></head>
+      <body style="font-family: Arial; margin: 40px; line-height: 1.6;">
+        <h1>Privacy Policy</h1>
+        <p><strong>Last Updated:</strong> ${new Date().toLocaleDateString()}</p>
+        <h2>Mobile Information (SMS)</h2>
+        <p><strong>Mobile Information:</strong> We do not share mobile information with third parties or affiliates for marketing or promotional purposes. All information collected via SMS is used solely for lead recovery and customer service. Text messaging originator opt-in data and consent are not shared with any third parties.</p>
+        <h2>Opt-Out Instructions</h2>
+        <p>You may opt out of receiving text messages at any time by replying <strong>STOP</strong> to any message. For help, reply <strong>HELP</strong>. Message and data rates may apply.</p>
+        <p><a href="/">← Back to Home</a></p>
+      </body>
+    </html>
+  `);
+});
+
+// Terms and Conditions (full Twilio‑compliant content)
+app.get('/terms-and-conditions', (req, res) => {
+  res.send(`
+    <html>
+      <head><title>Terms and Conditions - SubShopper</title></head>
+      <body style="font-family: Arial; margin: 40px; line-height: 1.6;">
+        <h1>Terms and Conditions</h1>
+        <p><strong>Last Updated:</strong> ${new Date().toLocaleDateString()}</p>
+        <h2>SMS Terms</h2>
+        <p>By providing your phone number, you consent to receive SMS messages regarding your service request. Message frequency varies. Message and data rates may apply.</p>
+        <p>To opt out, reply STOP. For help, reply HELP.</p>
+        <p>Carriers are not liable for any delayed or undelivered messages.</p>
+        <p><a href="/">← Back to Home</a></p>
+      </body>
+    </html>
+  `);
+});
+
 app.get('/terms', (req, res) => res.redirect('/terms-and-conditions'));
+
 app.get('/signup', (req, res) => res.render('signup'));
 app.get('/login', (req, res) => res.render('login'));
 app.get('/pricing', async (req, res) => res.render('pricing'));
-app.get('/test-call-form', (req, res) => { /* your form */ });
+
+// Test call form (simple HTML – you can expand if needed)
+app.get('/test-call-form', (req, res) => {
+  res.send(`
+    <html>
+      <body>
+        <h1>Test Call Form</h1>
+        <form action="/test-call" method="POST">
+          <input type="text" name="customer_phone" placeholder="Phone number" value="+15551234567">
+          <button type="submit">Submit</button>
+        </form>
+      </body>
+    </html>
+  `);
+});
 
 // API endpoints
 app.get('/api/plans', async (req, res) => {
@@ -139,7 +189,7 @@ app.post('/api/create-checkout-session', authMiddleware, async (req, res) => {
   }
 });
 
-// ---------- Stripe Webhook (single copy) ----------
+// ---------- Stripe Webhook ----------
 app.post('/stripe-webhook', express.raw({ type: 'application/json' }), async (req, res) => {
   const sig = req.headers['stripe-signature'];
   let event;
@@ -192,7 +242,6 @@ app.post('/stripe-webhook', express.raw({ type: 'application/json' }), async (re
         .from('subscriptions')
         .update({ status: 'canceled' })
         .eq('stripe_subscription_id', deletedSub.id);
-      // Optionally set business plan to null or a default
       break;
 
     default:
@@ -208,16 +257,40 @@ app.get('/dashboard', authMiddleware, async (req, res) => {
     .select('*')
     .eq('id', req.businessId)
     .single();
+  // You can render a proper dashboard view here, but for now JSON is fine
   res.json({ message: 'Welcome to your dashboard', business });
 });
 
-// ---------- Test call endpoints (unchanged) ----------
-app.post('/test-call', async (req, res) => { /* your existing code */ });
-app.get('/test-call-form', (req, res) => { /* your existing form */ });
+// ---------- Test call endpoint (simulate) ----------
+app.post('/test-call', express.json(), async (req, res) => {
+  try {
+    const business_id = 'a88b0145-72a7-4576-8540-a15fca089d50'; // your test business
+    const customer_phone = req.body.customer_phone || '+15551234567';
+    const voicemail_url = req.body.voicemail_url || 'https://example.com/test-audio.mp3';
 
-// ---------- Incoming Twilio endpoints ----------
-app.post('/incoming-call', express.urlencoded({ extended: true }), async (req, res) => { /* your code */ });
-app.post('/voicemail-recording', express.urlencoded({ extended: true }), async (req, res) => { /* your code */ });
+    const transcription = await transcribeAudio(voicemail_url);
+    const aiData = await extractLeadInfo(transcription, business_id);
+
+    const { data, error } = await supabase
+      .from('calls')
+      .insert([{ business_id, customer_phone, voicemail_url, transcription, ai_extracted: aiData, estimated_value: aiData.estimated_value || 0, status: 'new' }])
+      .select();
+    if (error) throw error;
+    res.json({ success: true, call: data[0] });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ---------- Incoming Twilio endpoints (placeholders) ----------
+app.post('/incoming-call', express.urlencoded({ extended: true }), (req, res) => {
+  res.type('text/xml').send('<Response><Say>Thank you for calling.</Say></Response>');
+});
+
+app.post('/voicemail-recording', express.urlencoded({ extended: true }), (req, res) => {
+  res.type('text/xml').send('<Response><Say>Message received.</Say></Response>');
+});
 
 // ---------- Start Server ----------
 app.listen(port, () => {
