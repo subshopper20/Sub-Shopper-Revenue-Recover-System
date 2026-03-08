@@ -3,13 +3,9 @@ const express = require('express');
 const { transcribeAudio, extractLeadInfo } = require('./ai');
 const supabase = require('./supabase');
 
-const express = require('express');
-const { transcribeAudio, extractLeadInfo } = require('./ai');
-const supabase = require('./supabase');
-const path = require('path');
 // etc.
 const app = express();
-const port = 3000;
+const port = process.env.PORT || 3000;
 
 const path = require('path');
 
@@ -406,7 +402,6 @@ app.post('/voicemail-recording', express.urlencoded({ extended: true }), async (
 
 // Start the server
 app.listen(port, () => {
-  const port = process.env.PORT || 3000;
   console.log(`App running at http://localhost:${port}`);
   console.log(`Public URL: https://subshopper.online`);
 });
