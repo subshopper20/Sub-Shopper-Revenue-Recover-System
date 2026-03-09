@@ -33,7 +33,7 @@ async function authMiddleware(req, res, next) {
 
   const { data: profile } = await supabaseAdmin
     .from('profiles')
-    .select('business_id')
+    .select('business_id, is_demo')
     .eq('id', user.id)
     .single();
 
@@ -41,33 +41,13 @@ async function authMiddleware(req, res, next) {
 
   req.user = user;
   req.businessId = profile.business_id;
+  req.isDemo = profile.is_demo || false;
   next();
 }
-const { data: profile } = await supabaseAdmin
-  .from('profiles')
-  .select('business_id, is_demo')   // ← include is_demo
-  .eq('id', user.id)
-  .single();
 
-if (!profile) return res.status(403).json({ error: 'No business associated' });
-
-req.user = user;
-req.businessId = profile.business_id;
-req.isDemo = profile.is_demo || false;   // ← add this line
-next();
-//isDemo Dashboard 
-app.get('/dashboard', authMiddleware, async (req, res) => {
-  const { data: business } = await supabaseAdmin
-    .from('businesses')
-    .select('*')
-    .eq('id', req.businessId)
-    .single();
-  res.render('dashboard', { business, isDemo: req.isDemo });
-});
 // ---------- Public Routes ----------
 app.get('/', (req, res) => res.render('index'));
 
-// Privacy Policy (full Twilio‑compliant content)
 app.get('/privacy-policy', (req, res) => {
   res.send(`
     <html>
@@ -77,24 +57,27 @@ app.get('/privacy-policy', (req, res) => {
         <style>...</style>
       </head>
       <body>
-        ${require('fs').readFileSync('./views/partials/header.ejs', 'utf8')} <!-- crude, but better to use EJS -->
-        <div class="container">... your content ...</div>
-        ${require('fs').readFileSync('./views/partials/footer.ejs', 'utf8')}
+        <h1>Privacy Policy</h1>
+        <p><strong>Last Updated:</strong> ${new Date().toLocaleDateString()}</p>
+        <h2>Mobile Information (SMS)</h2>
+        <p><strong>Mobile Information:</strong> We do not share mobile information with third parties or affiliates for marketing or promotional purposes. All information collected via SMS is used solely for lead recovery and customer service. Text messaging originator opt-in data and consent are not shared with any third parties.</p>
+        <h2>Opt-Out Instructions</h2>
+        <p>You may opt out of receiving text messages at any time by replying <strong>STOP</strong> to any message. For help, reply <strong>HELP</strong>. Message and data rates may apply.</p>
+        <p><a href="/">← Back to Home</a></p>
       </body>
     </html>
   `);
 });
 
-// Terms and Conditions (full Twilio‑compliant content)
 app.get('/terms-and-conditions', (req, res) => {
   res.send(`
     <html>
-      <head><head>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Page Title</title>
-  <style>...</style>
-</head><title>Terms and Conditions - SubShopper</title></head>
-      <body style="font-family: Arial; margin: 40px; line-height: 1.6;">
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Terms and Conditions - Revenue Recovery System</title>
+        <style>...</style>
+      </head>
+      <body>
         <h1>Terms and Conditions</h1>
         <p><strong>Last Updated:</strong> ${new Date().toLocaleDateString()}</p>
         <h2>SMS Terms</h2>
@@ -113,10 +96,13 @@ app.get('/signup', (req, res) => res.render('signup'));
 app.get('/login', (req, res) => res.render('login'));
 app.get('/pricing', async (req, res) => res.render('pricing'));
 
-// Test call form (simple HTML – you can expand if needed)
 app.get('/test-call-form', (req, res) => {
   res.send(`
     <html>
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Test Call Form</title>
+      </head>
       <body>
         <h1>Test Call Form</h1>
         <form action="/test-call" method="POST">
@@ -128,13 +114,12 @@ app.get('/test-call-form', (req, res) => {
   `);
 });
 
-// API endpoints
+// ---------- API endpoints ----------
 app.get('/api/plans', async (req, res) => {
   const { data } = await supabaseAdmin.from('plans').select('*');
   res.json(data);
 });
 
-// ---------- Signup ----------
 app.post('/api/signup', express.json(), async (req, res) => {
   const { email, password, businessName, fullName } = req.body;
   try {
@@ -160,7 +145,6 @@ app.post('/api/signup', express.json(), async (req, res) => {
   }
 });
 
-// ---------- Login ----------
 app.post('/api/login', express.json(), async (req, res) => {
   const { email, password } = req.body;
   try {
@@ -173,14 +157,11 @@ app.post('/api/login', express.json(), async (req, res) => {
   }
 });
 
-// ---------- Checkout ----------
 app.post('/api/create-checkout-session', authMiddleware, async (req, res) => {
   // Prevent demo users from creating real subscriptions
   if (req.isDemo) {
     return res.status(403).json({ error: 'Demo users cannot subscribe. Please sign up for a real account.' });
   }
-  // ... rest of the function
-});app.post('/api/create-checkout-session', authMiddleware, async (req, res) => {
   const { priceId, successUrl, cancelUrl } = req.body;
   try {
     const { data: business, error: bizError } = await supabaseAdmin
@@ -287,8 +268,9 @@ app.get('/dashboard', authMiddleware, async (req, res) => {
     .select('*')
     .eq('id', req.businessId)
     .single();
-  res.render('dashboard', { business });
+  res.render('dashboard', { business, isDemo: req.isDemo });
 });
+
 // ---------- Test call endpoint (simulate) ----------
 app.post('/test-call', express.json(), async (req, res) => {
   try {
@@ -320,11 +302,9 @@ app.post('/voicemail-recording', express.urlencoded({ extended: true }), (req, r
   res.type('text/xml').send('<Response><Say>Message received.</Say></Response>');
 });
 
-// ---------- Start Server ----------
-// Demo auto-login
+// ---------- Demo auto-login ----------
 app.get('/demo', async (req, res) => {
   try {
-    // Read demo credentials from environment variables (never hardcode!)
     const demoEmail = process.env.DEMO_EMAIL;
     const demoPassword = process.env.DEMO_PASSWORD;
 
@@ -332,7 +312,6 @@ app.get('/demo', async (req, res) => {
       throw new Error('Demo credentials not configured');
     }
 
-    // Sign in with Supabase
     const { data, error } = await supabaseAdmin.auth.signInWithPassword({
       email: demoEmail,
       password: demoPassword,
@@ -340,10 +319,9 @@ app.get('/demo', async (req, res) => {
 
     if (error) throw error;
 
-    // Send a tiny HTML page that stores the token in localStorage and redirects
     res.send(`
       <html>
-        <head><title>Redirecting...</title></head>
+        <head><title>Redirecting to Demo...</title></head>
         <body>
           <script>
             localStorage.setItem('token', '${data.session.access_token}');
@@ -356,7 +334,10 @@ app.get('/demo', async (req, res) => {
     console.error('Demo login failed:', err);
     res.status(500).send('Demo unavailable. Please try again later.');
   }
-});app.listen(port, () => {
+});
+
+// ---------- Start Server ----------
+app.listen(port, () => {
   console.log(`App running at http://localhost:${port}`);
   console.log(`Public URL: https://subshopper.online`);
 });
