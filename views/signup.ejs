@@ -13,6 +13,11 @@
     .error { color: red; margin-top: 10px; text-align: center; }
     .link { text-align: center; margin-top: 20px; }
   </style>
+<% if (isDemo) { %>
+  <div style="background: #fff3cd; padding: 10px; border-radius: 4px; margin-bottom: 20px;">
+    ⚠️ You are viewing a demo. Some features are disabled. <a href="/signup">Sign up</a> for full access.
+  </div>
+<% } %>
 </head>
 <body>
   <%- include('partials/header') %>
