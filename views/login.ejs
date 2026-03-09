@@ -1,11 +1,9 @@
 <!DOCTYPE html>
 <html>
 <head>
-<head>
+  <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  ... other meta tags
-</head>
-  <title>Log In - SubShopper</title>
+  <title>Log In - Revenue Recovery System</title>
   <style>
     body { font-family: Arial, sans-serif; background: #f5f5f5; margin: 0; padding: 40px; }
     .container { max-width: 400px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
@@ -15,7 +13,6 @@
     button:hover { background: #3046c0; }
     .error { color: red; margin-top: 10px; text-align: center; }
     .link { text-align: center; margin-top: 20px; }
-    .link a { color: #4361ee; text-decoration: none; }
     .forgot { text-align: center; margin-top: 10px; }
   </style>
 </head>
@@ -39,37 +36,34 @@
 
   <script>
     document.addEventListener('DOMContentLoaded', function() {
-      const form = document.getElementById('loginForm');
-      if (form) {
-        form.addEventListener('submit', async (e) => {
-          e.preventDefault();
-          const email = document.getElementById('email').value;
-          const password = document.getElementById('password').value;
+      document.getElementById('loginForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
 
-          const res = await fetch('/api/login', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password })
-          });
-          const data = await res.json();
-          if (res.ok) {
-            localStorage.setItem('token', data.session.access_token);
-            // Fetch the dashboard with the token
-            const dashRes = await fetch('/dashboard', {
-              headers: { 'Authorization': 'Bearer ' + data.session.access_token }
-            });
-            const dashHtml = await dashRes.text();
-            document.open();
-            document.write(dashHtml);
-            document.close();
-          } else {
-            document.getElementById('error').textContent = data.error || 'Login failed';
-          }
+        const res = await fetch('/api/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
         });
-      } else {
-        console.error('Login form not found');
-      }
+        const data = await res.json();
+        if (res.ok) {
+          localStorage.setItem('token', data.session.access_token);
+          // Fetch the dashboard with the token
+          const dashRes = await fetch('/dashboard', {
+            headers: { 'Authorization': 'Bearer ' + data.session.access_token }
+          });
+          const dashHtml = await dashRes.text();
+          document.open();
+          document.write(dashHtml);
+          document.close();
+        } else {
+          document.getElementById('error').textContent = data.error || 'Login failed';
+        }
+      });
     });
-  </script> <%- include('partials/footer') %>
+  </script>
+
+  <%- include('partials/footer') %>
 </body>
 </html>
