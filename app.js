@@ -43,7 +43,27 @@ async function authMiddleware(req, res, next) {
   req.businessId = profile.business_id;
   next();
 }
+const { data: profile } = await supabaseAdmin
+  .from('profiles')
+  .select('business_id, is_demo')   // ← include is_demo
+  .eq('id', user.id)
+  .single();
 
+if (!profile) return res.status(403).json({ error: 'No business associated' });
+
+req.user = user;
+req.businessId = profile.business_id;
+req.isDemo = profile.is_demo || false;   // ← add this line
+next();
+//isDemo Dashboard 
+app.get('/dashboard', authMiddleware, async (req, res) => {
+  const { data: business } = await supabaseAdmin
+    .from('businesses')
+    .select('*')
+    .eq('id', req.businessId)
+    .single();
+  res.render('dashboard', { business, isDemo: req.isDemo });
+});
 // ---------- Public Routes ----------
 app.get('/', (req, res) => res.render('index'));
 
@@ -155,6 +175,12 @@ app.post('/api/login', express.json(), async (req, res) => {
 
 // ---------- Checkout ----------
 app.post('/api/create-checkout-session', authMiddleware, async (req, res) => {
+  // Prevent demo users from creating real subscriptions
+  if (req.isDemo) {
+    return res.status(403).json({ error: 'Demo users cannot subscribe. Please sign up for a real account.' });
+  }
+  // ... rest of the function
+});app.post('/api/create-checkout-session', authMiddleware, async (req, res) => {
   const { priceId, successUrl, cancelUrl } = req.body;
   try {
     const { data: business, error: bizError } = await supabaseAdmin
@@ -295,7 +321,42 @@ app.post('/voicemail-recording', express.urlencoded({ extended: true }), (req, r
 });
 
 // ---------- Start Server ----------
-app.listen(port, () => {
+// Demo auto-login
+app.get('/demo', async (req, res) => {
+  try {
+    // Read demo credentials from environment variables (never hardcode!)
+    const demoEmail = process.env.DEMO_EMAIL;
+    const demoPassword = process.env.DEMO_PASSWORD;
+
+    if (!demoEmail || !demoPassword) {
+      throw new Error('Demo credentials not configured');
+    }
+
+    // Sign in with Supabase
+    const { data, error } = await supabaseAdmin.auth.signInWithPassword({
+      email: demoEmail,
+      password: demoPassword,
+    });
+
+    if (error) throw error;
+
+    // Send a tiny HTML page that stores the token in localStorage and redirects
+    res.send(`
+      <html>
+        <head><title>Redirecting...</title></head>
+        <body>
+          <script>
+            localStorage.setItem('token', '${data.session.access_token}');
+            window.location.href = '/dashboard';
+          </script>
+        </body>
+      </html>
+    `);
+  } catch (err) {
+    console.error('Demo login failed:', err);
+    res.status(500).send('Demo unavailable. Please try again later.');
+  }
+});app.listen(port, () => {
   console.log(`App running at http://localhost:${port}`);
   console.log(`Public URL: https://subshopper.online`);
 });
