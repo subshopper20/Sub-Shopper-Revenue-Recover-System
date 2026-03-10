@@ -119,6 +119,16 @@ app.get('/api/plans', async (req, res) => {
   const { data } = await supabaseAdmin.from('plans').select('*');
   res.json(data);
 });
+// Before inserting, check for existing business name
+const { data: existing } = await supabaseAdmin
+  .from('businesses')
+  .select('id')
+  .eq('name', businessName)
+  .maybeSingle();
+
+if (existing) {
+  return res.status(400).json({ error: 'Business name already taken' });
+}
 
 app.post('/api/signup', express.json(), async (req, res) => {
   const { email, password, businessName, fullName } = req.body;
