@@ -148,8 +148,13 @@ app.post('/api/signup', express.json(), async (req, res) => {
 app.post('/api/login', express.json(), async (req, res) => {
   const { email, password } = req.body;
   try {
+    console.log('Login attempt for:', email);
     const { data, error } = await supabaseAdmin.auth.signInWithPassword({ email, password });
-    if (error) throw error;
+    if (error) {
+      console.error('Supabase auth error:', error);
+      throw error;
+    }
+    console.log('Login successful, session:', data.session);
     res.json({ session: data.session });
   } catch (err) {
     console.error('Login error:', err);
