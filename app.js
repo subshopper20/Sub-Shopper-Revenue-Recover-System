@@ -283,6 +283,11 @@ app.get('/dashboard', authMiddleware, async (req, res) => {
     .select('*')
     .eq('id', req.businessId)
     .single();
+
+  if (!business) {
+    return res.status(404).send('Business not found. Please contact support.');
+  }
+
   res.render('dashboard', { business, isDemo: req.isDemo });
 });
 
