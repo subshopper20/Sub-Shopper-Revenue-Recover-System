@@ -5,25 +5,71 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Dashboard - Revenue Recovery System</title>
   <style>
-    body { font-family: Arial; margin: 40px; background: #f5f5f5; }
-    .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; }
+    body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #f5f5f5; }
+    .header { background: #4361ee; padding: 15px 30px; color: white; display: flex; justify-content: space-between; align-items: center; }
+    .header a { color: white; margin: 0 15px; text-decoration: none; }
+    .container { max-width: 800px; margin: 40px auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
     h1 { color: #333; }
+    .demo-banner {
+      background: #e7f5ff;
+      border: 2px dashed #4361ee;
+      padding: 20px;
+      margin-bottom: 30px;
+      border-radius: 8px;
+      text-align: center;
+    }
+    .demo-banner p { margin: 10px 0; }
+    .demo-banner .btn {
+      background: #4361ee;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 40px;
+      text-decoration: none;
+      display: inline-block;
+    }
     .info { margin: 20px 0; }
     .label { font-weight: bold; }
+    .btn-logout { background: #dc3545; color: white; padding: 10px 20px; border-radius: 40px; text-decoration: none; }
+    footer {
+      background: #f5f5f5;
+      padding: 20px;
+      text-align: center;
+      margin-top: 40px;
+      border-top: 1px solid #ddd;
+    }
   </style>
 </head>
 <body>
   <%- include('partials/header') %>
+
   <div class="container">
+    <% if (isDemo) { %>
+      <div class="demo-banner">
+        <p>⭐ <strong>You are in Demo Mode</strong> ⭐</p>
+        <p>This is a fully functional demo account. Some features are simulated.</p>
+        <p><a href="/signup" class="btn">Sign up for full access</a></p>
+      </div>
+    <% } %>
+
     <h1>Dashboard</h1>
-    <p>Welcome, <%= business.name %>!</p>
+    <p>Welcome, <%= isDemo ? 'Demo Business' : business.name %>!</p>
+
     <div class="info">
       <p><span class="label">Business ID:</span> <%= business.id %></p>
       <p><span class="label">Plan ID:</span> <%= business.plan_id || 'None' %></p>
       <p><span class="label">Stripe Customer ID:</span> <%= business.stripe_customer_id || 'Not set' %></p>
     </div>
-    <p><a href="/pricing">View Plans</a> | <a href="/logout">Logout</a></p>
+
+    <p>
+      <a href="/pricing">View Plans</a> | 
+      <a href="/logout" class="btn-logout">Logout</a>
+    </p>
   </div>
-  <%- include('partials/footer') %>
+
+  <footer>
+    <p>&copy; 2026 Sub Shopper LLC. All rights reserved.</p>
+    <p>Powered by <strong>Sub Shopper Revenue Recovery System</strong></p>
+    <p><a href="/privacy-policy">Privacy</a> | <a href="/terms-and-conditions">Terms</a></p>
+  </footer>
 </body>
 </html>
