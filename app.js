@@ -1,5 +1,7 @@
 require('dotenv').config();
-const express = require('express');
+const express = require('express')
+const cookieParser = require('cookie-parser');
+app.use(cookieParser());;
 const { transcribeAudio, extractLeadInfo } = require('./ai');
 const supabase = require('./supabase'); // regular client for normal queries
 const path = require('path');
@@ -25,7 +27,10 @@ const supabaseAdmin = createClient(
 
 // ---------- Authentication Middleware ----------
 async function authMiddleware(req, res, next) {
-  const token = req.headers.authorization?.split(' ')[1];
+  let token = req.headers.authorization?.split(' ')[1];
+  if (!token) {
+    token = req.cookies.token; // read from cookie
+  }
   if (!token) return res.status(401).json({ error: 'No token provided' });
 
   const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
@@ -114,6 +119,12 @@ app.get('/test-call-form', (req, res) => {
   `);
 });
 
+//logout 
+app.get('/logout', (req, res) => {
+  res.clearCookie('token');
+  res.send('<script>localStorage.removeItem("token"); window.location.href="/";</script>');
+});
+
 // ---------- API endpoints ----------
 app.get('/api/plans', async (req, res) => {
   const { data } = await supabaseAdmin.from('plans').select('*');
@@ -160,13 +171,17 @@ app.post('/api/signup', express.json(), async (req, res) => {
 app.post('/api/login', express.json(), async (req, res) => {
   const { email, password } = req.body;
   try {
-    console.log('Login attempt for:', email);
     const { data, error } = await supabaseAdmin.auth.signInWithPassword({ email, password });
-    if (error) {
-      console.error('Supabase auth error:', error);
-      throw error;
-    }
-    console.log('Login successful, session:', data.session);
+    if (error) throw error;
+
+    // Set cookie
+    res.cookie('token', data.session.access_token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000
+    });
+
     res.json({ session: data.session });
   } catch (err) {
     console.error('Login error:', err);
@@ -341,6 +356,15 @@ app.get('/demo', async (req, res) => {
 
     if (error) throw error;
 
+    // Set cookie (httpOnly for security, expires in 7 days)
+    res.cookie('token', data.session.access_token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production', // HTTPS only in production
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+    });
+
+    // Also send a small HTML to set token in localStorage (optional)
     res.send(`
       <html>
         <head><title>Redirecting to Demo...</title></head>
