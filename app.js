@@ -292,6 +292,7 @@ app.post('/stripe-webhook', express.raw({ type: 'application/json' }), async (re
 });
 
 // ---------- Protected Dashboard ----------
+// ---------- Protected Dashboard ----------
 app.get('/dashboard', authMiddleware, async (req, res) => {
   const { data: business } = await supabaseAdmin
     .from('businesses')
@@ -303,7 +304,19 @@ app.get('/dashboard', authMiddleware, async (req, res) => {
     return res.status(404).send('Business not found. Please contact support.');
   }
 
-  res.render('dashboard', { business, isDemo: req.isDemo });
+  // Fetch recent calls for this business
+  const { data: recentCalls } = await supabaseAdmin
+    .from('calls')
+    .select('*')
+    .eq('business_id', req.businessId)
+    .order('created_at', { ascending: false })
+    .limit(10);
+
+  res.render('dashboard', { 
+    business, 
+    isDemo: req.isDemo, 
+    recentCalls: recentCalls || [] 
+  });
 });
 
 // ---------- Test call endpoint (simulate) ----------
