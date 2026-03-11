@@ -358,6 +358,58 @@ app.get('/demo', async (req, res) => {
   }
 });
 
+// Forgot password page
+app.get('/forgot-password', (req, res) => {
+  res.send(`
+    <html>
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Forgot Password - Revenue Recovery System</title>
+        <style>
+          body { font-family: Arial, sans-serif; background: #f5f5f5; margin: 0; padding: 40px; }
+          .container { max-width: 400px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+          h1 { text-align: center; color: #333; }
+          input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+          button { background: #4361ee; color: white; padding: 14px; width: 100%; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; }
+          .message { color: green; text-align: center; margin-top: 10px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <h1>Reset Password</h1>
+          <form id="resetForm">
+            <input type="email" id="email" placeholder="Your email" required>
+            <button type="submit">Send Reset Link</button>
+          </form>
+          <div id="message" class="message"></div>
+        </div>
+        <script>
+          document.getElementById('resetForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const res = await fetch('/api/forgot-password', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ email })
+            });
+            const data = await res.json();
+            document.getElementById('message').textContent = data.message || 'Check your email for reset link.';
+          });
+        </script>
+      </body>
+    </html>
+  `);
+});
+
+// API endpoint for password reset
+app.post('/api/forgot-password', express.json(), async (req, res) => {
+  const { email } = req.body;
+  const { error } = await supabaseAdmin.auth.resetPasswordForEmail(email, {
+    redirectTo: 'https://subshopper.online/reset-password', // create this page later
+  });
+  if (error) return res.status(400).json({ error: error.message });
+  res.json({ message: 'Password reset email sent.' });
+});
 // ---------- Start Server ----------
 app.listen(port, () => {
   console.log(`App running at http://localhost:${port}`);
