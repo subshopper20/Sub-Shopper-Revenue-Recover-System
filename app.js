@@ -1,11 +1,10 @@
 require('dotenv').config();
-const express = require('express')
-const cookieParser = require('cookie-parser');
-app.use(cookieParser());;
+const express = require('express');
 const { transcribeAudio, extractLeadInfo } = require('./ai');
 const supabase = require('./supabase'); // regular client for normal queries
 const path = require('path');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+const cookieParser = require('cookie-parser');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -17,6 +16,7 @@ app.set('views', path.join(__dirname, 'views'));
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser()); // enable cookie parsing
 
 // ---------- Admin Supabase client (bypasses RLS) ----------
 const { createClient } = require('@supabase/supabase-js');
@@ -27,9 +27,10 @@ const supabaseAdmin = createClient(
 
 // ---------- Authentication Middleware ----------
 async function authMiddleware(req, res, next) {
+  // Try to get token from Authorization header or from cookie
   let token = req.headers.authorization?.split(' ')[1];
   if (!token) {
-    token = req.cookies.token; // read from cookie
+    token = req.cookies.token;
   }
   if (!token) return res.status(401).json({ error: 'No token provided' });
 
@@ -119,12 +120,6 @@ app.get('/test-call-form', (req, res) => {
   `);
 });
 
-//logout 
-app.get('/logout', (req, res) => {
-  res.clearCookie('token');
-  res.send('<script>localStorage.removeItem("token"); window.location.href="/";</script>');
-});
-
 // ---------- API endpoints ----------
 app.get('/api/plans', async (req, res) => {
   const { data } = await supabaseAdmin.from('plans').select('*');
@@ -172,14 +167,17 @@ app.post('/api/login', express.json(), async (req, res) => {
   const { email, password } = req.body;
   try {
     const { data, error } = await supabaseAdmin.auth.signInWithPassword({ email, password });
-    if (error) throw error;
+    if (error) {
+      console.error('Supabase auth error:', error);
+      throw error;
+    }
 
-    // Set cookie
+    // Set HTTP‑only cookie
     res.cookie('token', data.session.access_token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: process.env.NODE_ENV === 'production', // HTTPS only in production
       sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000
+      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
     });
 
     res.json({ session: data.session });
@@ -356,15 +354,15 @@ app.get('/demo', async (req, res) => {
 
     if (error) throw error;
 
-    // Set cookie (httpOnly for security, expires in 7 days)
+    // Set HTTP‑only cookie
     res.cookie('token', data.session.access_token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production', // HTTPS only in production
+      secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+      maxAge: 7 * 24 * 60 * 60 * 1000
     });
 
-    // Also send a small HTML to set token in localStorage (optional)
+    // Send a page that also sets localStorage token (optional, for existing client‑side code)
     res.send(`
       <html>
         <head><title>Redirecting to Demo...</title></head>
@@ -382,7 +380,7 @@ app.get('/demo', async (req, res) => {
   }
 });
 
-// Forgot password page
+// ---------- Forgot password ----------
 app.get('/forgot-password', (req, res) => {
   res.send(`
     <html>
@@ -425,7 +423,6 @@ app.get('/forgot-password', (req, res) => {
   `);
 });
 
-// API endpoint for password reset
 app.post('/api/forgot-password', express.json(), async (req, res) => {
   const { email } = req.body;
   const { error } = await supabaseAdmin.auth.resetPasswordForEmail(email, {
@@ -434,6 +431,13 @@ app.post('/api/forgot-password', express.json(), async (req, res) => {
   if (error) return res.status(400).json({ error: error.message });
   res.json({ message: 'Password reset email sent.' });
 });
+
+// ---------- Logout ----------
+app.get('/logout', (req, res) => {
+  res.clearCookie('token');
+  res.send('<script>localStorage.removeItem("token"); window.location.href="/";</script>');
+});
+
 // ---------- Start Server ----------
 app.listen(port, () => {
   console.log(`App running at http://localhost:${port}`);
