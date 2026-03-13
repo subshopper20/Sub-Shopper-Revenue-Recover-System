@@ -46,20 +46,29 @@ async function authMiddleware(req, res, next) {
   }
   console.log('AuthMiddleware: user', user.id);
 
-  const { data: profile, error: profileError } = await supabaseAdmin
+  // Debug: log the service key being used (first few chars only)
+  console.log('AuthMiddleware: using service key (first 10 chars):', process.env.SUPABASE_SERVICE_KEY?.substring(0, 10));
+
+  // Use select('*') to get array, then log raw result
+  const { data: profiles, error: profilesError } = await supabaseAdmin
     .from('profiles')
-    .select('business_id, is_demo')
-    .eq('id', user.id)
-    .single();
+    .select('*')
+    .eq('id', user.id);
 
-  if (profileError) {
-    console.error('AuthMiddleware: profile query error', profileError);
+  console.log('AuthMiddleware: profiles query raw result', { data: profiles, error: profilesError });
+
+  if (profilesError) {
+    console.error('AuthMiddleware: profiles query error', profilesError);
+    return res.status(500).json({ error: 'Database error during profile lookup' });
   }
-  console.log('AuthMiddleware: profile', profile);
 
-  if (!profile) {
+  if (!profiles || profiles.length === 0) {
+    console.log('AuthMiddleware: no profiles found for user', user.id);
     return res.status(403).json({ error: 'No business associated' });
   }
+
+  const profile = profiles[0];
+  console.log('AuthMiddleware: profile found', profile);
 
   req.user = user;
   req.businessId = profile.business_id;
