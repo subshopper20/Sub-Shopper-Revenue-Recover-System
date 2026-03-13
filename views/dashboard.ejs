@@ -3,6 +3,62 @@
   <p>⭐ <strong>You are in Demo Mode</strong> ⭐</p>
   <p>This is a fully functional demo account. Some features are simulated.</p>
   <p>
+<% if (isDemo) { %>
+  <div class="demo-banner">
+    <p>⭐ <strong>You are in Demo Mode</strong> ⭐</p>
+    <p>This is a fully functional demo account. Some features are simulated.</p>
+    <p>
+      <a href="/logout" style="color: #4361ee;">Exit Demo</a> | 
+      <a href="/signup" class="btn">Sign up for full access</a>
+    </p>
+    <!-- Demo Action Buttons -->
+    <div style="margin-top: 15px; display: flex; gap: 10px; justify-content: center;">
+      <button id="simulateCallBtn" style="background: #4361ee; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">📞 Simulate New Call</button>
+      <button id="resetDemoBtn" style="background: #f59e0b; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">🔄 Reset Demo Data</button>
+    </div>
+  </div>
+
+  <script>
+    document.getElementById('simulateCallBtn')?.addEventListener('click', async () => {
+      const btn = document.getElementById('simulateCallBtn');
+      btn.disabled = true;
+      btn.textContent = 'Adding...';
+      try {
+        const res = await fetch('/api/demo/add-call', { method: 'POST' });
+        if (res.ok) {
+          location.reload(); // Simple reload to show new call
+        } else {
+          alert('Failed to add call.');
+        }
+      } catch (err) {
+        alert('Error: ' + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '📞 Simulate New Call';
+      }
+    });
+
+    document.getElementById('resetDemoBtn')?.addEventListener('click', async () => {
+      if (!confirm('Reset all demo calls to original sample data?')) return;
+      const btn = document.getElementById('resetDemoBtn');
+      btn.disabled = true;
+      btn.textContent = 'Resetting...';
+      try {
+        const res = await fetch('/api/demo/reset', { method: 'POST' });
+        if (res.ok) {
+          location.reload();
+        } else {
+          alert('Failed to reset demo data.');
+        }
+      } catch (err) {
+        alert('Error: ' + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '🔄 Reset Demo Data';
+      }
+    });
+  </script>
+<% } %>
     <a href="/logout" style="color: #4361ee;">Exit Demo</a> | 
     <a href="/signup" class="btn">Sign up for full access</a>
   </p>

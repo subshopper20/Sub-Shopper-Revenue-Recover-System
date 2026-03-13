@@ -277,7 +277,7 @@ app.post('/stripe-webhook', express.raw({ type: 'application/json' }), async (re
       }
       break;
 
-    case 'customer.subscription.deleted':
+    case 'customer.subscription.deleted':CDATASection
       const deletedSub = event.data.object;
       await supabaseAdmin
         .from('subscriptions')
@@ -291,7 +291,6 @@ app.post('/stripe-webhook', express.raw({ type: 'application/json' }), async (re
   res.json({ received: true });
 });
 
-// ---------- Protected Dashboard ----------
 // ---------- Protected Dashboard ----------
 app.get('/dashboard', authMiddleware, async (req, res) => {
   const { data: business } = await supabaseAdmin
@@ -451,6 +450,130 @@ app.get('/logout', (req, res) => {
   res.send('<script>localStorage.removeItem("token"); window.location.href="/";</script>');
 });
 
+// ---------- Demo Interactive Endpoints ----------
+// Only accessible by demo users
+
+// Add a random simulated call
+app.post('/api/demo/add-call', authMiddleware, async (req, res) => {
+  if (!req.isDemo) {
+    return res.status(403).json({ error: 'Only available in demo mode' });
+  }
+
+  // Sample call templates (matching your seeded data)
+  const templates = [
+    {
+      customer_phone: '+15551112233',
+      transcription: 'Hi, I need my lawn mowed tomorrow. My name is John.',
+      ai_extracted: { customer_name: 'John', service_requested: 'lawn mowing', urgency: 'high' },
+      estimated_value: 85.00
+    },
+    {
+      customer_phone: '+15557654321',
+      transcription: 'This is Mary from 123 Oak St. Please call me back about tree trimming.',
+      ai_extracted: { customer_name: 'Mary', service_requested: 'tree trimming', address: '123 Oak St' },
+      estimated_value: 150.00
+    },
+    {
+      customer_phone: '+15559876543',
+      transcription: 'Need a quote for fertilizing my lawn, about 1/2 acre.',
+      ai_extracted: { customer_name: 'Robert', service_requested: 'fertilizing', property_size: '0.5 acre' },
+      estimated_value: 65.00
+    },
+    {
+      customer_phone: '+15551112233',
+      transcription: 'Emergency! My sprinkler system is broken.',
+      ai_extracted: { customer_name: 'Sarah', service_requested: 'sprinkler repair', urgency: 'high' },
+      estimated_value: 120.00
+    }
+  ];
+
+  // Pick a random template
+  const randomIndex = Math.floor(Math.random() * templates.length);
+  const newCall = templates[randomIndex];
+
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('calls')
+      .insert([{
+        business_id: req.businessId,
+        customer_phone: newCall.customer_phone,
+        transcription: newCall.transcription,
+        ai_extracted: newCall.ai_extracted,
+        estimated_value: newCall.estimated_value,
+        status: 'new',
+        created_at: new Date()
+      }])
+      .select();
+
+    if (error) throw error;
+    res.json({ success: true, call: data[0] });
+  } catch (err) {
+    console.error('Error adding demo call:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Reset demo data (delete all calls and re‑seed)
+app.post('/api/demo/reset', authMiddleware, async (req, res) => {
+  if (!req.isDemo) {
+    return res.status(403).json({ error: 'Only available in demo mode' });
+  }
+
+  const seedCalls = [
+    {
+      customer_phone: '+15551234567',
+      transcription: 'Hi, I need my lawn mowed tomorrow. My name is John.',
+      ai_extracted: { customer_name: 'John', service_requested: 'lawn mowing', urgency: 'high' },
+      estimated_value: 85.00,
+      status: 'new',
+      created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000) // 2 days ago
+    },
+    {
+      customer_phone: '+15557654321',
+      transcription: 'This is Mary from 123 Oak St. Please call me back about tree trimming.',
+      ai_extracted: { customer_name: 'Mary', service_requested: 'tree trimming', address: '123 Oak St' },
+      estimated_value: 150.00,
+      status: 'contacted',
+      created_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000) // 1 day ago
+    },
+    {
+      customer_phone: '+15559876543',
+      transcription: 'Need a quote for fertilizing my lawn, about 1/2 acre.',
+      ai_extracted: { customer_name: 'Robert', service_requested: 'fertilizing', property_size: '0.5 acre' },
+      estimated_value: 65.00,
+      status: 'new',
+      created_at: new Date(Date.now() - 12 * 60 * 60 * 1000) // 12 hours ago
+    },
+    {
+      customer_phone: '+15551112233',
+      transcription: 'Emergency! My sprinkler system is broken.',
+      ai_extracted: { customer_name: 'Sarah', service_requested: 'sprinkler repair', urgency: 'high' },
+      estimated_value: 120.00,
+      status: 'hot',
+      created_at: new Date(Date.now() - 3 * 60 * 60 * 1000) // 3 hours ago
+    }
+  ];
+
+  try {
+    // Delete all existing calls for this demo business
+    const { error: deleteError } = await supabaseAdmin
+      .from('calls')
+      .delete()
+      .eq('business_id', req.businessId);
+    if (deleteError) throw deleteError;
+
+    // Insert seed calls
+    const { error: insertError } = await supabaseAdmin
+      .from('calls')
+      .insert(seedCalls.map(call => ({ ...call, business_id: req.businessId })));
+    if (insertError) throw insertError;
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Error resetting demo data:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
 // ---------- Start Server ----------
 app.listen(port, () => {
   console.log(`App running at http://localhost:${port}`);
