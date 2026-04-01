@@ -1,0 +1,1 @@
+& "C:\Program Files (x86)\cloudflared\cloudflared.exe" tunnel --config "C:\Users\Owner\.cloudflared\config.yml" run revenue-recover-tunnel
