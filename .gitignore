@@ -1,0 +1,32 @@
+# Dependencies
+node_modules/
+.env
+.env.local
+.env.production
+
+# Build outputs
+dist/
+build/
+.next/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Backup folders
+*-backup*
+
+# Database
+*.db
+*.sqlite
